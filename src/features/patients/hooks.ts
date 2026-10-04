@@ -74,6 +74,8 @@ export type PatientDetail = PatientListItem & {
     marketing_opt_in: boolean;
     created_at: string;
     updated_at: string;
+    has_photo: boolean;
+    photo_updated_at: string | null;
 };
 
 export function usePatient(id: string | undefined) {
@@ -82,4 +84,50 @@ export function usePatient(id: string | undefined) {
         queryFn: () => api<PatientDetail>(`/patients/${id}/`),
         enabled: Boolean(id),
     });
+}
+
+export function useUpdatePatient(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: PatientInput) => api<PatientDetail>(`/patients/${id}/`, { method: "PATCH", body: input }),
+    // refreshes both the list and this patient's profile
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["patients"] }),
+  });
+}
+
+
+import type { Appointment, AppointmentStatus } from "@/features/diary/hooks";
+
+export type PatientSummary = {
+  patient_since: string;
+  total_visits: number;
+  no_shows: number;
+  last_visit: string | null;
+  balance: string | null; // null until billing exists
+  next_appointment: null | {
+    id: string;
+    start_at: string;
+    end_at: string;
+    status: AppointmentStatus;
+    type_name: string;
+    practitioner_name: string;
+  };
+};
+
+export function usePatientSummary(id: string) {
+  return useQuery({
+    queryKey: ["patients", "summary", id],
+    queryFn: () => api<PatientSummary>(`/patients/${id}/summary/`),
+    staleTime: 0, // always fresh when you open a profile
+  });
+}
+
+export type PatientAppointments = { upcoming: Appointment[]; history: Appointment[] };
+
+export function usePatientAppointments(id: string) {
+  return useQuery({
+    queryKey: ["patients", "appointments", id],
+    queryFn: () => api<PatientAppointments>(`/patients/${id}/appointments/`),
+    staleTime: 0,
+  });
 }

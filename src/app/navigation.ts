@@ -1,5 +1,5 @@
 import {
-    CalendarDays, LayoutDashboard, MessageSquare, Settings, Users, type LucideIcon,
+    CalendarDays, LayoutDashboard, MessageSquare, Settings, Users, type LucideIcon, UserCircle,
 } from "lucide-react";
 import type {Role} from "@/features/auth/types";
 
@@ -11,6 +11,7 @@ export const NAV_ITEMS: NavItem[] = [
     {to: "/patients", label: "Patients", icon: Users},
     {to: "/messages", label: "Messages", icon: MessageSquare, roles: ["receptionist", "practice_manager"]},
     {to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["practice_manager"]},
+    { to: "/profile", label: "My profile", icon: UserCircle, roles: ["doctor", "nurse"] },
     {to: "/settings", label: "Settings", icon: Settings, roles: ["practice_manager"]},
 ];
 

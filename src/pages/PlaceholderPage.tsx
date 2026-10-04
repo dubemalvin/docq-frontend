@@ -17,7 +17,7 @@ export default function PlaceholderPage({
         <div className="flex min-h-[60vh] items-center justify-center">
             <div className="w-full max-w-md rounded-md border border-slate-200 bg-white p-8 text-center shadow-sm">
                 <img
-                    src="/doc_icon.svg"
+                    src="/doc_icon_v4.png"
                     alt="Docq"
                     className="mx-auto h-16 w-16 object-contain"
                 />

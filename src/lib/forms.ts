@@ -24,3 +24,31 @@ export function applyServerErrors<T extends FieldValues>(
     }
     return matched && !general ? null : (general ?? error.message);
 }
+
+/** Turns Django's error body into { field: "first message" }, including errors nested in lists. */
+export function flattenServerErrors(error: unknown): Record<string, string> {
+    if (!(error instanceof ApiError) || !error.data || typeof error.data !== "object") return {};
+
+    const firstMessage = (value: unknown): string | null => {
+        if (typeof value === "string") return value;
+        if (Array.isArray(value)) {
+            for (const item of value) {
+                const message = firstMessage(item);
+                if (message) return message;
+            }
+        } else if (value && typeof value === "object") {
+            for (const item of Object.values(value)) {
+                const message = firstMessage(item);
+                if (message) return message;
+            }
+        }
+        return null;
+    };
+
+    const result: Record<string, string> = {};
+    for (const [key, value] of Object.entries(error.data as Record<string, unknown>)) {
+        const message = firstMessage(value);
+        if (message) result[key] = message;
+    }
+    return result;
+}

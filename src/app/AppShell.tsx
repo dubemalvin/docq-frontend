@@ -45,7 +45,7 @@ export default function AppShell() {
                         onClick={() => setOpen(false)}
                     >
                         <img
-                            src="/doc_icon.svg"
+                            src="/doc_icon_v4.png"
                             alt="Docq"
                             className="h-16 w-16 shrink-0 object-contain md:h-16 md:w-16"
                         />

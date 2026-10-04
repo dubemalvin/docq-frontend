@@ -1,4 +1,5 @@
-import {useState, type ReactNode} from "react";
+import {useEffect, useState, type ReactNode} from "react";
+import {format, parseISO} from "date-fns";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {z} from "zod";
@@ -7,7 +8,7 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle} from "@/components/ui/sheet";
 import {applyServerErrors} from "@/lib/forms";
-import {useCreatePatient, type PatientListItem} from "./hooks";
+import {useCreatePatient, useUpdatePatient, type PatientDetail, type PatientListItem} from "./hooks";
 import {Textarea} from "@/components/ui/textarea";
 import {useMe} from "@/features/auth/useAuth";
 
@@ -32,7 +33,7 @@ const schema = z.object({
     sms_opt_in: z.boolean(),
     email_opt_in: z.boolean(),
     marketing_opt_in: z.boolean(),
-    consent_given: z.boolean().refine((value) => value, "Consent must be recorded before saving"),
+    consent_given: z.boolean(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -47,6 +48,22 @@ const EMPTY: FormValues = {
 };
 
 const FIELD_NAMES = Object.keys(EMPTY);
+
+function toFormValues(p: PatientDetail): FormValues {
+    return {
+        first_name: p.first_name, last_name: p.last_name, id_number: p.id_number,
+        date_of_birth: p.date_of_birth ?? "", sex: p.sex,
+        phone: p.phone, email: p.email, address: p.address,
+        medical_aid_name: p.medical_aid_name, medical_aid_number: p.medical_aid_number,
+        medical_aid_dependant_code: p.medical_aid_dependant_code,
+        next_of_kin_name: p.next_of_kin_name, next_of_kin_phone: p.next_of_kin_phone,
+        allergies: p.allergies ?? "", chronic_conditions: p.chronic_conditions ?? "",
+        current_medication: p.current_medication ?? "",
+        whatsapp_opt_in: p.whatsapp_opt_in, sms_opt_in: p.sms_opt_in,
+        email_opt_in: p.email_opt_in, marketing_opt_in: p.marketing_opt_in,
+        consent_given: Boolean(p.consent_given_at),
+    };
+}
 
 function Field({label, htmlFor, error, children}: {
     label: string;
@@ -87,15 +104,26 @@ type Props = {
     onCreated?: (patient: PatientListItem) => void;
 };
 
-export default function PatientFormSheet({open, onOpenChange, onCreated}: Props) {
+export default function PatientFormSheet({open, onOpenChange, onCreated, patient}: Props) {
+    const isEdit = Boolean(patient);
+    const update = useUpdatePatient(patient?.id ?? "");
+
     const [formError, setFormError] = useState<string | null>(null);
     const create = useCreatePatient();
+    const saving = create.isPending || update.isPending;
     const me = useMe();
     const showClinical = me.data?.role !== "receptionist";
     const {
         register, handleSubmit, reset, setError,
         formState: {errors},
     } = useForm<FormValues>({resolver: zodResolver(schema), defaultValues: EMPTY});
+
+    useEffect(() => {
+        if (!open) return;
+        reset(patient ? toFormValues(patient) : EMPTY);
+        setFormError(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, patient?.id]);
 
     function handleOpenChange(next: boolean) {
         if (!next) {
@@ -107,16 +135,20 @@ export default function PatientFormSheet({open, onOpenChange, onCreated}: Props)
 
     function onSubmit(values: FormValues) {
         setFormError(null);
-        create.mutate(
-            {...values, date_of_birth: values.date_of_birth || null},
-            {
-                onSuccess: (patient) => {
-                    onCreated?.(patient);
-                    handleOpenChange(false);
-                },
-                onError: (error) => setFormError(applyServerErrors(error, setError, FIELD_NAMES)),
+        if (!patient?.consent_given_at && !values.consent_given) {
+            setError("consent_given", {type: "manual", message: "Consent must be recorded before saving"});
+            return;
+        }
+        const payload = {...values, date_of_birth: values.date_of_birth || null};
+        const options = {
+            onSuccess: (saved: PatientListItem) => {
+                onCreated?.(saved);
+                handleOpenChange(false);
             },
-        );
+            onError: (error: Error) => setFormError(applyServerErrors(error, setError, FIELD_NAMES)),
+        };
+        if (patient) update.mutate(payload, options);
+        else create.mutate(payload, options);
     }
 
     const selectClass =
@@ -124,10 +156,10 @@ export default function PatientFormSheet({open, onOpenChange, onCreated}: Props)
 
     return (
         <Sheet open={open} onOpenChange={handleOpenChange}>
-            <SheetContent className="flex w-full flex-col gap-0 sm:max-w-2xl!">
+            <SheetContent className="flex w-full flex-col gap-0">
                 <SheetHeader className="border-b border-border">
-                    <SheetTitle>New patient</SheetTitle>
-                    <SheetDescription>Add a patient to your practice.</SheetDescription>
+                    <SheetTitle>{isEdit ? "Edit patient" : "New patient"}</SheetTitle>
+                    <SheetDescription>{isEdit ? "Update this patient's details." : "Add a patient to your practice."}</SheetDescription>
                 </SheetHeader>
 
                 <form
@@ -242,11 +274,20 @@ export default function PatientFormSheet({open, onOpenChange, onCreated}: Props)
                     </Section>
 
                     <div className="space-y-1.5 rounded-md border border-amber-200 bg-amber-50 p-3">
-                        <label className="flex items-start gap-2 text-sm">
-                            <input type="checkbox" className="mt-0.5 h-4 w-4" {...register("consent_given")} />
-                            <span>The patient has consented to us storing and processing their personal information (POPIA).</span>
-                        </label>
-                        {errors.consent_given && <p className="text-sm text-red-600">{errors.consent_given.message}</p>}
+                        {patient?.consent_given_at ? (
+                            <p className="text-sm text-slate-600">
+                                Consent recorded on {format(parseISO(patient.consent_given_at), "d MMM yyyy")}.
+                            </p>
+                        ) : (
+                            <>
+                                <label className="flex items-start gap-2 text-sm">
+                                    <input type="checkbox" className="mt-0.5 h-4 w-4" {...register("consent_given")} />
+                                    <span>The patient has consented to us storing and processing their personal information (POPIA).</span>
+                                </label>
+                                {errors.consent_given &&
+                                    <p className="text-sm text-red-600">{errors.consent_given.message}</p>}
+                            </>
+                        )}
                     </div>
                 </form>
 
@@ -255,7 +296,7 @@ export default function PatientFormSheet({open, onOpenChange, onCreated}: Props)
                         Cancel
                     </Button>
                     <Button type="submit" form="patient-form" className="flex-1" disabled={create.isPending}>
-                        {create.isPending ? "Saving..." : "Save patient"}
+                        {saving ? "Saving…" : isEdit ? "Save changes" : "Save patient"}
                     </Button>
                 </SheetFooter>
             </SheetContent>

@@ -130,3 +130,73 @@
         @apply font-sans;
     }
 }
+
+
+/* ---------- FullCalendar theme ---------- */
+.fc {
+  --fc-border-color: #e2e8f0;
+  --fc-today-bg-color: #eff6ff;
+  --fc-now-indicator-color: #ef4444;
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #f8fafc;
+
+  --fc-button-text-color: #334155;
+  --fc-button-bg-color: #ffffff;
+  --fc-button-border-color: #e2e8f0;
+  --fc-button-hover-bg-color: #f8fafc;
+  --fc-button-hover-border-color: #cbd5e1;
+  --fc-button-active-bg-color: #0f172a;
+  --fc-button-active-border-color: #0f172a;
+
+  font-size: 0.8125rem;
+}
+
+/* Toolbar */
+.fc .fc-toolbar { margin-bottom: 0.75rem; gap: 0.5rem; flex-wrap: wrap; }
+.fc .fc-toolbar-title { font-size: 1rem; font-weight: 600; color: #0f172a; }
+
+/* Compact buttons */
+.fc .fc-button {
+  height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  text-transform: none;
+  border-radius: 6px;
+  box-shadow: none !important;
+}
+.fc .fc-button .fc-icon { font-size: 1.15em; }
+.fc .fc-prev-button, .fc .fc-next-button { width: 2rem; padding: 0; }
+.fc .fc-button-primary:disabled { opacity: 0.45; }
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active { color: #fff; }
+
+/* Grouped buttons: only the outer corners are rounded */
+.fc .fc-button-group > .fc-button { border-radius: 0; }
+.fc .fc-button-group > .fc-button:first-child { border-radius: 6px 0 0 6px; }
+.fc .fc-button-group > .fc-button:last-child { border-radius: 0 6px 6px 0; }
+
+/* Day headers and time labels */
+.fc .fc-col-header-cell { background: #f8fafc; }
+.fc .fc-col-header-cell-cushion {
+  padding: 0.5rem 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.fc .fc-day-today .fc-col-header-cell-cushion { color: #2563eb; }
+.fc .fc-timegrid-slot-label-cushion { font-size: 0.6875rem; color: #94a3b8; }
+.fc .fc-timegrid-slot-minor { border-top-style: dotted; }
+
+/* Events */
+.fc .fc-event {
+  border-radius: 4px;
+  border-width: 0;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+}
+.fc .fc-timegrid-event .fc-event-main { padding: 2px 0; }
+.fc .fc-timegrid-event { overflow: hidden; }
+.fc .fc-timegrid-event.fc-timegrid-event-short .fc-event-main { padding: 0; }
